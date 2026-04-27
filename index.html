@@ -536,7 +536,8 @@
                 renderQuestion('q1');
             } catch (err) {
                 console.error('LIFF init error:', err);
-                showError('初期化に失敗しました。LINEを再起動してお試しください。');
+                const detail = err && (err.message || err.code || JSON.stringify(err));
+                showError(`初期化に失敗しました。LINEを再起動してお試しください。\n(${detail})`);
             }
         }
 
