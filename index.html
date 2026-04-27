@@ -526,10 +526,11 @@
                 await liff.init({ liffId: CONFIG.LIFF_ID });
 
                 if (liff.isLoggedIn()) {
-                    currentProfile = await liff.getProfile();
-                } else if (liff.isInClient()) {
-                    // Optional: force login if needed but let's keep it smooth
-                    // liff.login();
+                    try {
+                        currentProfile = await liff.getProfile();
+                    } catch (profileErr) {
+                        console.warn('getProfile failed (scope missing?):', profileErr);
+                    }
                 }
 
                 setupEventListeners();
