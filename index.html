@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ホワイトニングプラン診断</title>
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #6bc1ed;
+            --primary-dark: #4aafd8;
+            --primary-deep: #2e94c0;
+            --bg: #f0f9ff;
+            --white: #ffffff;
+            --text-main: #1a1a1a;
+            --text-sub: #555555;
+            --border: #b8e0f5;
+            --shadow: 0 4px 16px rgba(107, 193, 237, 0.15);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --font: 'Noto Sans JP', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font);
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Screen System */
+        .screen {
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: #e0f2fe;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            border-radius: 0 3px 3px 0;
+            transition: width 0.3s ease;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            margin-top: auto;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 14px;
+            background: var(--white);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Intro Screen */
+        .intro-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .intro-badge {
+            padding: 6px 12px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 13px;
+            color: var(--primary-deep);
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+
+        .main-title span {
+            color: var(--primary);
+        }
+
+        .intro-text {
+            font-size: 15px;
+            color: var(--text-sub);
+            margin-bottom: 40px;
+        }
+
+        .intro-features {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 60px;
+        }
+
+        .feature-item {
+            background: var(--white);
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .feature-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-sub);
+        }
+
+        /* Question Screens */
+        .question-wrap {
+            flex: 1;
+        }
+
+        .q-label {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .q-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: left;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+            font-weight: 700;
+        }
+
+        /* Result Screen */
+        .result-wrap {
+            flex: 1;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .res-badge {
+            font-size: 12px;
+            background: #e0f2fe;
+            color: var(--primary-deep);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-weight: 700;
+        }
+
+        .res-icon {
+            font-size: 48px;
+            margin: 16px 0;
+        }
+
+        .res-label {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .result-card {
+            background: var(--white);
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .res-desc {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-sub);
+            margin-bottom: 20px;
+        }
+
+        .res-plan-box {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: var(--radius);
+            border: 1px dashed var(--primary);
+        }
+
+        .plan-tag {
+            font-size: 11px;
+            color: var(--primary-deep);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .plan-name {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* Loading & Complete */
+        .loading-wrap, .complete-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0f2fe;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .complete-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .complete-title {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        /* Utilities */
+        .error-content {
+            text-align: center;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress Bar -->
+    <div id="progress-container" class="progress-container hidden">
+        <div id="progress-bar" class="progress-bar"></div>
+    </div>
+
+    <!-- Error Screen -->
+    <div id="screen-error" class="screen hidden">
+        <div class="error-content">
+            <p id="error-message"></p>
+            <button onclick="location.reload()" class="btn-primary">再読み込み</button>
+        </div>
+    </div>
+
+    <!-- Intro Screen -->
+    <div id="screen-intro" class="screen active">
+        <div class="intro-content">
+            <div class="intro-badge">✨ あなたに最適なプランを提案</div>
+            <h1 class="main-title">ホワイトニング<br><span>プラン診断</span></h1>
+            <p class="intro-text">4つの質問に答えるだけで、<br>あなたにぴったりのプランを診断します。</p>
+            <div class="intro-features">
+                <div class="feature-item">
+                    <span class="feature-icon">⏱</span>
+                    <span class="feature-label">約30秒</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔍</span>
+                    <span class="feature-label">Web診断</span>
+                </div>
+            </div>
+            <button id="btn-start" class="btn-primary">診断をはじめる</button>
+        </div>
+    </div>
+
+    <!-- Question Screens (Q1-Q4) -->
+    <div id="screen-q1" class="screen hidden">
+        <div class="question-wrap">
+            <span class="q-label">QUESTION 01</span>
+            <h2 class="q-title">目指したい白さのイメージは？</h2>
+            <div class="options-list" id="opts-q1"></div>
+        </div>
+    </div>
+
+    <div id="screen-q2" class="screen hidden">
+        <div class="question-wrap">
+            <span class="q-label">QUESTION 02</span>
+            <h2 class="q-title">ホワイトニングへの取り組み方に近いのは？</h2>
+            <div class="options-list" id="opts-q2"></div>
+        </div>
+    </div>
+
+    <div id="screen-q3" class="screen hidden">
+        <div class="question-wrap">
+            <span class="q-label">QUESTION 03</span>
+            <h2 class="q-title">年齢を教えてください</h2>
+            <div class="options-list" id="opts-q3"></div>
+        </div>
+    </div>
+
+    <div id="screen-q4" class="screen hidden">
+        <div class="question-wrap">
+            <span class="q-label">QUESTION 04</span>
+            <h2 class="q-title">ホワイトニングを始めようと思ったきっかけは？</h2>
+            <div class="options-list" id="opts-q4"></div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="screen-loading" class="screen hidden">
+        <div class="loading-wrap">
+            <div class="spinner"></div>
+            <p>プランを分析中...</p>
+        </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="screen-result" class="screen hidden">
+        <div class="result-wrap">
+            <div class="result-header">
+                <span class="res-badge">診断結果</span>
+                <div id="res-icon" class="res-icon">✨</div>
+                <h2 id="res-label" class="res-label">---</h2>
+            </div>
+            <div class="result-card">
+                <p id="res-description" class="res-desc">---</p>
+                <div id="res-plan-box" class="res-plan-box">
+                    <span class="plan-tag">おすすめプラン</span>
+                    <p id="res-plan-name" class="plan-name">---</p>
+                </div>
+            </div>
+            <button id="btn-send" class="btn-primary">LINEに送る</button>
+        </div>
+    </div>
+
+    <!-- Completion Screen -->
+    <div id="screen-complete" class="screen hidden">
+        <div class="complete-wrap">
+            <div class="complete-icon">✅</div>
+            <h2 class="complete-title">診断完了！</h2>
+            <p>診断結果をトーク画面に送信しました。<br>ご確認ください。</p>
+            <button onclick="liff.closeWindow()" class="btn-secondary">トークに戻る</button>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            LIFF_ID: '2005378903-eFXXT5Gj',
+            GAS_URL: 'https://script.google.com/macros/s/XXXXXXXX/exec'
+        };
+
+        const QUESTIONS = [
+            {
+                id: 'q1',
+                title: '目指したい白さのイメージは？',
+                options: [
+                    { id: 'A', text: '自然な白さでOK（少しトーンアップできれば十分）' },
+                    { id: 'B', text: 'はっきり白くなったとわかるレベルにしたい' },
+                    { id: 'C', text: '憧れの芸能人のような、透き通る白さにしたい' }
+                ]
+            },
+            {
+                id: 'q2',
+                title: 'ホワイトニングへの取り組み方に近いのは？',
+                options: [
+                    { id: 'A', text: 'まずはお試しで体験してみたい' },
+                    { id: 'B', text: '効果を確認しながら、じっくり続けたい' },
+                    { id: 'C', text: '短期間で集中して、確実に白くしたい' },
+                    { id: 'D', text: '特別なイベントに向けて、計画的に仕上げたい' }
+                ]
+            },
+            {
+                id: 'q3',
+                title: '年齢を教えてください',
+                options: [
+                    { id: 'A', text: '10代・20代' },
+                    { id: 'B', text: '30代' },
+                    { id: 'C', text: '40代' },
+                    { id: 'D', text: '50代以上' }
+                ]
+            },
+            {
+                id: 'q4',
+                title: 'ホワイトニングを始めようと思ったきっかけは？',
+                options: [
+                    { id: 'A', text: '結婚式・成人式など大切なイベントが控えている' },
+                    { id: 'B', text: '就職・転職など、仕事での第一印象を良くしたい' },
+                    { id: 'C', text: '笑顔や見た目にもっと自信を持ちたい' },
+                    { id: 'D', text: '歯の黄ばみが気になり始めた' },
+                    { id: 'E', text: '友人・家族に勧められた・一緒に始めたい' }
+                ]
+            }
+        ];
+
+        const RESULT_TYPES = {
+            LIGHT_4: {
+                planName: '4回プラン',
+                label: '「はじめてホワイトニング」プラン（4回）',
+                icon: '✨',
+                description: 'まずは4回のケアで自然でナチュラルな白さを実感。初めての方でも安心してスタートできる入門プランです。',
+                color: '#6bc1ed'
+            },
+            STANDARD_8: {
+                planName: '8回プラン',
+                label: '「しっかりホワイトニング」プラン（8回）',
+                icon: '🦷',
+                description: '「明らかに白くなった！」と実感できるスタンダードプラン。笑顔に自信が持てる白さへと仕上げます。',
+                color: '#4aafd8'
+            },
+            PREMIUM_12: {
+                planName: '12回プラン',
+                label: '「プレミアムホワイトニング」プラン（12回）',
+                icon: '💎',
+                description: '憧れの透き通るような白さを実現するプレミアムプラン。大切なイベントや本気の仕上げに最適です。',
+                color: '#2e94c0'
+            }
+        };
+
+        let userAnswers = {};
+        let currentProfile = null;
+
+        // --- Initialization ---
+
+        async function init() {
+            try {
+                await liff.init({ liffId: CONFIG.LIFF_ID });
+                
+                if (liff.isLoggedIn()) {
+                    currentProfile = await liff.getProfile();
+                } else if (liff.isInClient()) {
+                    // Optional: force login if needed but let's keep it smooth
+                    // liff.login();
+                }
+
+                setupEventListeners();
+                renderQuestion('q1');
+            } catch (err) {
+                console.error('LIFF init error:', err);
+                showError('初期化に失敗しました。LINEを再起動してお試しください。');
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('btn-start').addEventListener('click', () => {
+                showScreen('q1');
+                updateProgress(1);
+            });
+
+            document.getElementById('btn-send').addEventListener('click', async () => {
+                await handleSubmission();
+            });
+        }
+
+        // --- UI Logic ---
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+            window.scrollTo(0, 0);
+
+            const progressContainer = document.getElementById('progress-container');
+            if (screenId.startsWith('q')) {
+                progressContainer.classList.remove('hidden');
+            } else {
+                progressContainer.classList.add('hidden');
+            }
+        }
+
+        function updateProgress(step) {
+            const bar = document.getElementById('progress-bar');
+            const percentage = (step / QUESTIONS.length) * 100;
+            bar.style.width = `${percentage}%`;
+        }
+
+        function renderQuestion(qId) {
+            const qData = QUESTIONS.find(q => q.id === qId);
+            if (!qData) return;
+
+            const container = document.getElementById(`opts-${qId}`);
+            container.innerHTML = '';
+
+            qData.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt.text;
+                btn.addEventListener('click', () => handleOptionClick(qId, opt));
+                container.appendChild(btn);
+            });
+        }
+
+        function handleOptionClick(qId, option) {
+            userAnswers[qId] = option.text;
+            
+            // Highlight selected
+            const btns = document.querySelectorAll(`#opts-${qId} .option-btn`);
+            btns.forEach(b => {
+                if (b.textContent === option.text) b.classList.add('selected');
+                else b.classList.remove('selected');
+            });
+
+            // Navigate to next
+            const currentIdx = QUESTIONS.findIndex(q => q.id === qId);
+            setTimeout(() => {
+                if (currentIdx < QUESTIONS.length - 1) {
+                    const nextQ = QUESTIONS[currentIdx + 1].id;
+                    renderQuestion(nextQ);
+                    showScreen(nextQ);
+                    updateProgress(currentIdx + 2);
+                } else {
+                    showLoadingAndCalculate();
+                }
+            }, 300);
+        }
+
+        function showLoadingAndCalculate() {
+            showScreen('loading');
+            
+            setTimeout(() => {
+                const resultType = calcResultType(userAnswers.q1, userAnswers.q2, userAnswers.q3, userAnswers.q4);
+                displayResult(resultType);
+            }, 1500);
+        }
+
+        function displayResult(type) {
+            const data = RESULT_TYPES[type];
+            document.getElementById('res-icon').textContent = data.icon;
+            document.getElementById('res-label').textContent = data.label;
+            document.getElementById('res-description').textContent = data.description;
+            document.getElementById('res-plan-name').textContent = data.planName;
+            
+            userAnswers.resultType = type;
+            showScreen('result');
+        }
+
+        function showError(msg) {
+            const errEl = document.getElementById('error-message');
+            if (errEl) errEl.textContent = msg;
+            showScreen('error');
+        }
+
+        // --- Diagnosis Logic ---
+
+        function calcResultType(q1, q2, q3, q4) {
+            let premiumScore = 0;
+            if (q4.includes('イベント') || q4.includes('結婚') || q4.includes('成人'))
+                premiumScore += 3;
+            if (q4.includes('仕事') || q4.includes('就職') || q4.includes('転職'))
+                premiumScore += 1;
+            if (q1.includes('芸能人') || q1.includes('透き通る'))
+                premiumScore += 3;
+            if (q2.includes('特別') || q2.includes('計画的'))
+                premiumScore += 3;
+            if (q2.includes('短期間') || q2.includes('集中'))
+                premiumScore += 2;
+            
+            if (premiumScore >= 4) return 'PREMIUM_12';
+
+            const isLightGoal = q1.includes('自然') || q1.includes('少し') || q1.includes('トーンアップ');
+            const isTryMode = q2.includes('お試し') || q2.includes('体験');
+            if (isLightGoal || isTryMode) return 'LIGHT_4';
+
+            return 'STANDARD_8';
+        }
+
+        // --- Submission Logic ---
+
+        async function handleSubmission() {
+            const btn = document.getElementById('btn-send');
+            btn.disabled = true;
+            btn.textContent = '送信中...';
+
+            const resultData = RESULT_TYPES[userAnswers.resultType];
+
+            try {
+                // 1. Send result to LINE talk
+                await sendResultToLine(resultData, userAnswers);
+
+                // 2. Post to GAS
+                await postToGas(currentProfile, userAnswers.resultType, userAnswers);
+
+                showScreen('complete');
+            } catch (err) {
+                console.error('Submission error:', err);
+                alert('送信に失敗しました。通信環境を確認してもう一度お試しください。');
+                btn.disabled = false;
+                btn.textContent = 'LINEに送る';
+            }
+        }
+
+        async function sendResultToLine(plan, answers) {
+            const message =
+                `✨ 診断結果が出ました！\n\n` +
+                `${plan.icon} あなたにおすすめのプランは\n` +
+                `【${plan.label}】\n` +
+                `です！\n\n` +
+                `📝 回答内容\n` +
+                `Q1: ${answers.q1}\n` +
+                `Q2: ${answers.q2}\n` +
+                `Q3: ${answers.q3}\n` +
+                `Q4: ${answers.q4}`;
+
+            if (liff.isInClient()) {
+                await liff.sendMessages([{ type: 'text', text: message }]);
+            } else {
+                console.log('Sending to LINE (simulated):', message);
+            }
+        }
+
+        async function postToGas(profile, resultType, answers) {
+            if (CONFIG.GAS_URL.includes('XXXXXXXX')) {
+                console.warn('GAS URL is not set. Skipping POST.');
+                return;
+            }
+
+            const payload = {
+                userId: profile ? profile.userId : 'anonymous',
+                displayName: profile ? profile.displayName : 'Guest',
+                resultType: resultType,
+                q1: answers.q1,
+                q2: answers.q2,
+                q3: answers.q3,
+                q4: answers.q4
+            };
+
+            try {
+                await fetch(CONFIG.GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error('GAS POST error:', err);
+            }
+        }
+
+        // Start app
+        init();
+    </script>
+</body>
+</html>
