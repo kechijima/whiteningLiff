@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -10,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary: #6bc1ed;
@@ -57,8 +58,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Progress Bar */
@@ -291,7 +299,8 @@
         }
 
         /* Loading & Complete */
-        .loading-wrap, .complete-wrap {
+        .loading-wrap,
+        .complete-wrap {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -311,8 +320,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .complete-icon {
@@ -332,6 +346,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Progress Bar -->
     <div id="progress-container" class="progress-container hidden">
@@ -422,24 +437,16 @@
                     <p id="res-plan-name" class="plan-name">---</p>
                 </div>
             </div>
-            <button id="btn-send" class="btn-primary">LINEに送る</button>
-        </div>
-    </div>
-
-    <!-- Completion Screen -->
-    <div id="screen-complete" class="screen hidden">
-        <div class="complete-wrap">
-            <div class="complete-icon">✅</div>
-            <h2 class="complete-title">診断完了！</h2>
-            <p>診断結果をトーク画面に送信しました。<br>ご確認ください。</p>
-            <button onclick="liff.closeWindow()" class="btn-secondary">トークに戻る</button>
+            <button onclick="liff.closeWindow()" class="btn-primary">診断を完了する</button>
+            <p id="auto-send-status"
+                style="text-align: center; font-size: 12px; color: var(--text-sub); margin-top: 12px;">結果をトークに送信しました</p>
         </div>
     </div>
 
     <script>
         const CONFIG = {
             LIFF_ID: '2005378903-eFXXT5Gj',
-            GAS_URL: 'https://script.google.com/macros/s/XXXXXXXX/exec'
+            GAS_URL: 'https://script.google.com/macros/s/AKfycbxlAfAslUXHGzlvsAINGei-z6OK32YYFjkpfEep8_f3q9XZKEnaKv0cdRjhs37aVLzo/exec'
         };
 
         const QUESTIONS = [
@@ -517,7 +524,7 @@
         async function init() {
             try {
                 await liff.init({ liffId: CONFIG.LIFF_ID });
-                
+
                 if (liff.isLoggedIn()) {
                     currentProfile = await liff.getProfile();
                 } else if (liff.isInClient()) {
@@ -537,10 +544,6 @@
             document.getElementById('btn-start').addEventListener('click', () => {
                 showScreen('q1');
                 updateProgress(1);
-            });
-
-            document.getElementById('btn-send').addEventListener('click', async () => {
-                await handleSubmission();
             });
         }
 
@@ -583,7 +586,7 @@
 
         function handleOptionClick(qId, option) {
             userAnswers[qId] = option.text;
-            
+
             // Highlight selected
             const btns = document.querySelectorAll(`#opts-${qId} .option-btn`);
             btns.forEach(b => {
@@ -607,7 +610,7 @@
 
         function showLoadingAndCalculate() {
             showScreen('loading');
-            
+
             setTimeout(() => {
                 const resultType = calcResultType(userAnswers.q1, userAnswers.q2, userAnswers.q3, userAnswers.q4);
                 displayResult(resultType);
@@ -620,9 +623,12 @@
             document.getElementById('res-label').textContent = data.label;
             document.getElementById('res-description').textContent = data.description;
             document.getElementById('res-plan-name').textContent = data.planName;
-            
+
             userAnswers.resultType = type;
             showScreen('result');
+
+            // Automatically send results
+            handleSubmission();
         }
 
         function showError(msg) {
@@ -645,7 +651,7 @@
                 premiumScore += 3;
             if (q2.includes('短期間') || q2.includes('集中'))
                 premiumScore += 2;
-            
+
             if (premiumScore >= 4) return 'PREMIUM_12';
 
             const isLightGoal = q1.includes('自然') || q1.includes('少し') || q1.includes('トーンアップ');
@@ -658,9 +664,8 @@
         // --- Submission Logic ---
 
         async function handleSubmission() {
-            const btn = document.getElementById('btn-send');
-            btn.disabled = true;
-            btn.textContent = '送信中...';
+            const statusEl = document.getElementById('auto-send-status');
+            if (statusEl) statusEl.textContent = '結果を送信中...';
 
             const resultData = RESULT_TYPES[userAnswers.resultType];
 
@@ -671,12 +676,10 @@
                 // 2. Post to GAS
                 await postToGas(currentProfile, userAnswers.resultType, userAnswers);
 
-                showScreen('complete');
+                if (statusEl) statusEl.textContent = '結果をトークに送信しました';
             } catch (err) {
                 console.error('Submission error:', err);
-                alert('送信に失敗しました。通信環境を確認してもう一度お試しください。');
-                btn.disabled = false;
-                btn.textContent = 'LINEに送る';
+                if (statusEl) statusEl.textContent = '送信に失敗しました（LINE内からお試しください）';
             }
         }
 
@@ -731,4 +734,5 @@
         init();
     </script>
 </body>
+
 </html>
